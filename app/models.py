@@ -65,7 +65,7 @@ class TimestampMixin:
 
 
 #USERS
-class User(Base, TimestampMixin):
+class User(TimestampMixin, Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -83,7 +83,7 @@ class User(Base, TimestampMixin):
 
 
 #DEPARTMENTS
-class Department(Base, TimestampMixin):
+class Department(TimestampMixin, Base):
     __tablename__ = "departments"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -96,7 +96,7 @@ class Department(Base, TimestampMixin):
 
 
 #DOCTORS
-class Doctor(Base, TimestampMixin):
+class Doctor(TimestampMixin, Base):
     __tablename__ = "doctors"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -122,7 +122,7 @@ class Doctor(Base, TimestampMixin):
 
 
 #PATIENTS
-class Patient(Base, TimestampMixin):
+class Patient(TimestampMixin, Base):
     __tablename__ = "patients"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -152,7 +152,7 @@ class Patient(Base, TimestampMixin):
     documents = relationship("Document", back_populates="patient")
 
 #DOCTOR AVAILABILITY
-class DoctorAvailability(Base, TimestampMixin):
+class DoctorAvailability(TimestampMixin, Base):
     __tablename__ = "doctor_availability"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -170,7 +170,7 @@ class DoctorAvailability(Base, TimestampMixin):
 
 
 #APPOINTMENTS
-class Appointment(Base, TimestampMixin):
+class Appointment(TimestampMixin, Base):
     __tablename__ = "appointments"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -195,7 +195,7 @@ class Appointment(Base, TimestampMixin):
 
 
 #LAB SERVICES
-class LabService(Base, TimestampMixin):
+class LabService(TimestampMixin, Base):
     __tablename__ = "lab_services"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -210,7 +210,7 @@ class LabService(Base, TimestampMixin):
 
 
 #LAB REQUESTS
-class LabRequest(Base, TimestampMixin):
+class LabRequest(TimestampMixin, Base):
     __tablename__ = "lab_requests"
 
     id = Column(Integer, primary_key=True, unique=True)
@@ -234,7 +234,7 @@ class LabRequest(Base, TimestampMixin):
 
 
 #LAB REPORTS
-class LabReport(Base, TimestampMixin):
+class LabReport(TimestampMixin, Base):
     __tablename__ = "lab_reports"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -251,7 +251,7 @@ class LabReport(Base, TimestampMixin):
 
 
 #WARD
-class Ward(Base, TimestampMixin):
+class Ward(TimestampMixin, Base):
     __tablename__ = "wards"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -265,7 +265,7 @@ class Ward(Base, TimestampMixin):
     beds =relationship("Bed", back_populates="ward")
 
 #BEDS
-class Bed(Base, TimestampMixin):
+class Bed(TimestampMixin, Base):
     __tablename__ = "beds"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -281,7 +281,7 @@ class Bed(Base, TimestampMixin):
     admissions =relationship("Admission", back_populates="beds")
 
 #ADMISSIONS
-class Admission(Base, TimestampMixin):
+class Admission(TimestampMixin, Base):
     __tablename__ = "admissions"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -303,7 +303,7 @@ class Admission(Base, TimestampMixin):
     bills = relationship("Bill", back_populates="admissions")
 
 #BILLS
-class Bill(Base, TimestampMixin):
+class Bill(TimestampMixin, Base):
     __tablename__ = "bills"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -331,7 +331,7 @@ class Bill(Base, TimestampMixin):
 
 
 #PAYMENTS
-class Payment(Base, TimestampMixin):
+class Payment(TimestampMixin, Base):
     __tablename__ = "payments"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -348,7 +348,7 @@ class Payment(Base, TimestampMixin):
     bill = relationship("Bill", back_populates="payments")
 
 #DOCUMENTS
-class Document(Base, TimestampMixin):
+class Document(TimestampMixin, Base):
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True, index=True)
