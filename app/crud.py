@@ -69,3 +69,52 @@ def delete_patient(db: Session, patient_id: int):
     return{
         "message": "Patient deleted successfully"
     }
+
+
+# DOCTOR CRUD
+
+# CREATE DOCTOR
+def create_doctor(db: Session, doctor:schemas.DoctorCreate):
+    db_doctor = models.Doctor(**doctor.model_dump())
+
+    db.add(db_doctor)
+    db.commit()
+    db.refresh(db_doctor)
+
+    return db_doctor
+
+# GET ALL DOCTORS
+def get_doctors(db: Session, skip: int = 0, limit: int = 100):
+    db_doctor = db.query(models.Doctor).filter(models.Doctor.is_active == True).offset(skip).limit(limit).all()
+
+# GET DOCTOR BY ID
+def get_doctor_by_id(db: Session, doctor_id: int):
+    doctor = (db.query(models.Doctor).filter(models.Doctor.id == doctor_id, models.Doctor.is_active == True).first())
+
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found")
+    
+    return doctor
+
+# UPDATE DOCTOR
+def update_doctor(db:Session, doctor_id: int, doctor_data: schemas.DoctorUpdate):
+    doctor = get_doctor_by_id(db,doctor_id)
+
+    update_data = doctor_data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(doctor, key, value)
+
+    db.commit()
+    db.refresh(doctor)
+
+    return doctor
+
+# DELETE DOCTOR
+def delete_doctor(db:Session, doctor_id: int):
+    doctor = get_doctor_by_id(db, doctor_id)
+    doctor.is_active == False
+    
+    db.commit()
+
+    return {"message": "Doctor deleted successfully"}
