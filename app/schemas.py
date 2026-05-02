@@ -23,6 +23,29 @@ class UserResponse(UserBase):
         from_attributes = True
 
 
+#DEPARTMENT SCHEMAS
+
+class DepartmentBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class DepartmentCreate(DepartmentBase):
+    pass 
+
+class DepartmentUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+class DepartmentResponse(DepartmentBase):
+    id: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
 #PATIENT SCHEMAS
 
 class PatientBase(BaseModel):
