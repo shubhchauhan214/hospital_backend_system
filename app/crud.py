@@ -16,6 +16,56 @@ def create_user(db: Session, user: schemas.UserCreate):
 def get_users(db: Session):
     return db.query(models.User).filter(models.User.is_active == True).all()
 
+
+# DEPARTMENTS
+# DEPARTMENT CREATE
+def create_department(db: Session , department:schemas.DepartmentCreate):
+    db_department = models.Department(**department.model_dump())
+
+    db.add(db_department)
+    db.commit()
+    db.refresh(db_department)
+
+    return db_department
+
+# GET DEPARTMENTS
+def get_departments(db:Session, skip:int = 0, limit:int = 100):
+    return(db.query(models.Department).filter(models.Department.is_active == True).offset(skip).limit(limit).all())
+
+
+# GET DEPARTMENT
+def get_department_by_id(db: Session, department_id: int):
+    department =(db.query(models.Department).filter(models.Department.id == department.id, models.Department.is_active ==True).first())
+
+    if not department:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Department Not Found")
+    
+    return department
+
+#UPDATE DEPARTMENT
+def update_department(db: Session, department_id: int, department_data: schemas. DepartmentUpdate):
+    department = get_department_by_id(db, department)
+
+    update_data = department_data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(department, key, value)
+
+    db.commit()
+    db.refresh(department)
+
+    return department
+
+#DELETE DEPARTMENT
+def delete_department(db: Session, department_id: int):
+    department = get_department_by_id(db, department_id)
+
+    department.is_active = False
+    db.commit()
+
+    return{"message": "Department deleted successfully"}
+
+
 # PATIENTS
 
 # CREATE PATIENT
