@@ -181,3 +181,66 @@ def delete_doctor(db:Session, doctor_id: int):
     db.commit()
 
     return {"message": "Doctor deleted successfully"}
+
+
+# APPOINTMENT CRUD
+# CREATE APPOINTMENT
+def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
+    # Check patient exists
+    patient = (db.query(models.Patient).filter(models.Patient.id == appointment.patient_id, models.Patient.is_active == True).first())
+
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+
+
+    # Check doctor exists
+    doctor = (db.query(models.Doctor).filter(models.Doctor.id == appointment.doctor_id, models.Doctor.is_active == True).first())
+
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found.")
+    
+    db_appointment = models.Appointment(**appointment.model_dump())
+
+    db.add(db_appointment)
+    db.commit()
+    db.refresh(db_appointment)
+
+    return db_appointment
+
+# GET ALL APPOINTMENTS
+def get_appointments(db: Session, skip:int = 0, limit:int = 100):
+    return (db.query(models.Appointment).offset(skip).limit(limit).all())
+
+# GET APPOINTMENT
+def get_appointment_by_id(db: Session, appointment_id: int):
+    appointment = (db.query(models.Appointment).filter(models.Appointment.id == appointment_id).first())
+
+    if not appointment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found.")
+    
+    return appointment
+
+# UPDATE APPOINTMENT
+def update_appointment(db: Session, appointment_id: int, appointment_data: schemas.AppointmentUpdate):
+    appointment = get_appointment_by_id(db, appointment_id)
+
+    update_data = appointment_data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(appointment, key, value)
+
+    db.commit()
+    db.refresh(appointment)
+
+    return appointment
+
+# DELETE APPOINTMENT
+def delete_appointment(db: Session, appointment_id: int):
+    appointment = get_appointment_by_id(db, appointment_id)
+
+    appointment.status = models.AppointmentStatus.CANCELLED
+
+    db.commit()
+    db.refresh(appointment)
+
+    return{"message": "Appointment cancelled sucessfully"}
