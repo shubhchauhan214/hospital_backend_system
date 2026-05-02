@@ -147,7 +147,7 @@ class Patient(TimestampMixin, Base):
 
     appointments = relationship("Appointment", back_populates="patient")
     lab_requests = relationship("LabRequest", back_populates="patient")
-    admission = relationship("Admission", back_populates="patient")
+    admissions = relationship("Admission", back_populates="patient")
     bills = relationship("Bill", back_populates="patient")
     documents = relationship("Document", back_populates="patient")
 
@@ -206,14 +206,14 @@ class LabService(TimestampMixin, Base):
 
     is_active = Column(Boolean, default=True)
 
-    lab_requests = relationship("LabRequest", back_populates="lab_services")
+    lab_requests = relationship("LabRequest", back_populates="lab_service")
 
 
 #LAB REQUESTS
 class LabRequest(TimestampMixin, Base):
     __tablename__ = "lab_requests"
 
-    id = Column(Integer, primary_key=True, unique=True)
+    id = Column(Integer, primary_key=True, index=True)
 
     patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False)
     doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=False)
@@ -278,7 +278,7 @@ class Bed(TimestampMixin, Base):
     price_per_day = Column(Numeric(10,2), default=0)
 
     ward = relationship("Ward", back_populates="beds")
-    admissions =relationship("Admission", back_populates="beds")
+    admissions =relationship("Admission", back_populates="bed")
 
 #ADMISSIONS
 class Admission(TimestampMixin, Base):
@@ -296,11 +296,11 @@ class Admission(TimestampMixin, Base):
     reason = Column(Text, nullable=True)
     status = Column(SqlEnum(AdmissionStatus), default=AdmissionStatus.ADMITTED)
 
-    patient = relationship("Patient", back_populates="admisisons")
+    patient = relationship("Patient", back_populates="admissions")
     doctor = relationship("Doctor", back_populates="admissions")
     bed = relationship("Bed", back_populates="admissions")
 
-    bills = relationship("Bill", back_populates="admissions")
+    bills = relationship("Bill", back_populates="admission")
 
 #BILLS
 class Bill(TimestampMixin, Base):
@@ -327,7 +327,7 @@ class Bill(TimestampMixin, Base):
 
     patient = relationship("Patient", back_populates="bills")
     admission = relationship("Admission", back_populates="bills")
-    payments = relationship("Payment", back_populates="bills")
+    payments = relationship("Payment", back_populates="bill")
 
 
 #PAYMENTS

@@ -16,7 +16,7 @@ class PatientBase(BaseModel):
     emergency_contact_name: Optional[str] = None
     emergency_contact_phone: Optional[str] = None
 
-class PatientCreate(BaseModel):
+class PatientCreate(PatientBase):
     pass 
 
 class PatientUpdate(BaseModel):
