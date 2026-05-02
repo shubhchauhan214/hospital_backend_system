@@ -3,6 +3,19 @@ from fastapi import HTTPException, status
 
 from app import models, schemas
 
+#USERS
+def create_user(db: Session, user: schemas.UserCreate):
+    db_user = models.User(full_name = user.full_name, email=user.email, phone=user.phone, role=user.role, password_hash=user.password)
+
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    return db_user
+
+def get_users(db: Session):
+    return db.query(models.User).filter(models.User.is_active == True).all()
+
 # PATIENTS
 
 # CREATE PATIENT
