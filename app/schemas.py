@@ -1,7 +1,8 @@
-from datetime import date, datetime
+from datetime import date, datetime, time 
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 from app.models import Gender
+from app.models import AppointmentStatus
 
 # USER SCHEMAS
 class UserBase(BaseModel):
@@ -112,3 +113,34 @@ class DoctorResponse(DoctorBase):
     class Config:
         from_attributes = True
 
+
+#APPOINTMENT SCHEMA
+
+class AppointmentBase(BaseModel):
+    patient_id: int
+    doctor_id: int
+    appointment_date: date
+    appointment_time: time
+    reason: Optional[str] = None
+    consultation_fee: float = 0
+    notes: Optional[str] = None
+
+class AppointmentCreate(AppointmentBase):
+    pass 
+
+class AppointmentUpdate(BaseModel):
+    appointment_date: Optional[date] = None
+    appointment_time: Optional[time] = None
+    reason: Optional[str] = None
+    status: Optional[AppointmentStatus] = None
+    consultation_fee: Optional[float] = None
+    notes: Optional[str] = None
+
+class AppointmentResponse(AppointmentBase):
+    id: int
+    status: AppointmentStatus
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
