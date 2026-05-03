@@ -144,3 +144,33 @@ class AppointmentResponse(AppointmentBase):
 
     class Config:
         from_attributes = True
+
+
+# DOCTOR AVAILABILITY SCHEMA
+
+class DoctorAvailabilityBase(BaseModel):
+    doctor_id: int
+    day_of_week: str
+    start_time: time
+    end_time: time
+    max_patients: Optional[int] = None
+    is_active: bool = True
+
+class DoctorAvailabilityCreate(DoctorAvailabilityBase):
+    pass 
+
+class DoctorAvailabilityUpdate(BaseModel):
+    day_of_week = Optional[str] = None
+    start_time =  Optional[time] = None
+    end_time = Optional[time] = None
+    max_patients: Optional[int] = None
+    is_active: Optional[bool] = None
+
+class DoctorAvailabilityResponse(DoctorAvailabilityBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+        
