@@ -244,3 +244,62 @@ def delete_appointment(db: Session, appointment_id: int):
     db.refresh(appointment)
 
     return{"message": "Appointment cancelled sucessfully"}
+
+
+#DOCTOR AVAILIBILITY CRUD
+def create_doctor_availability(db: Session, availability: schemas.DoctorAvailabilityCreate):
+    doctor = (db.query(models.Doctor).filter(models.Doctor.id == availability.doctor_id, models.Doctor.is_active == True).first())
+
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found")
+    
+    db_availability = models.DoctorAvailability(**availability.model_dump())
+
+    db.add(db_availability)
+    db.commit()
+    db.refresh(db_availability)
+
+    return db_availability
+
+# GET DOCTOR AVAILABILITIES
+def get_doctor_availibilities(db: Session, skip:int=0, limit:int=100):
+    return(db.query(models.DoctorAvailability).filter(models.DoctorAvailability.is_active == True).offset(skip).limit(limit).all())
+
+# GET DOCTOR AVAILABILITY
+def get_doctor_availability_by_id(db:Session, availability_id: int):
+    availability = (db.query(models.DoctorAvailability).filter(models.DoctorAvailability.id == availability_id, models.DoctorAvailability.is_active == True).first())
+
+    if not availability:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor availability not found")
+    
+    return availability
+
+# GET AVAILABILITY BY DOCTOR
+def get_availability_by_doctor_id(db:Session, doctor_id: int):
+    return (db.query(models.DoctorAvailability).filter(models.DoctorAvailability.doctor_id == doctor_id, models.DoctorAvailability.is_active == True).all())
+
+
+# UPDATE DOCTOR AVAILABILITY
+def update_doctor_availability(db: Session, availability_id: int, availability_data: schemas.DoctorAvailabilityUpdate):
+    availability = get_doctor_availability_by_id(db, availability_id)
+
+    update_data = availability_data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.itmes():
+        setattr(availability, key, value)
+
+    db.commit()
+    db.refresh(availability)
+
+    return availability
+
+# DELETE DOCTOR AVAILABILITY
+def delete_doctor_availability(db: Session, availability_id: int):
+    availability = get_doctor_availability_by_id(db, availability_id)
+
+    availability.is_active == False
+
+    db.commit()
+
+    return{"message": "Doctor availability deleted successfully"}
+
