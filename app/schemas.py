@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 from app.models import Gender
-from app.models import AppointmentStatus
+from app.models import AppointmentStatus, LabRequestStatus
 
 # USER SCHEMAS
 class UserBase(BaseModel):
@@ -198,3 +198,29 @@ class LabServiceResponse(LabServiceBase):
     class Config:
         from_attributes = True
         
+
+# LAB REQUEST SCHEMAS
+
+class LabRequestBase(BaseModel):
+    patient_id: int
+    doctor_id: int
+    appointment_id: Optional[int] = None
+    lab_service_id: int
+    remarks: Optional[str] = None
+
+class LabRequestCreate(LabRequestBase):
+    pass
+
+class LabRequestUpdate(BaseModel):
+    status: Optional[LabRequestStatus] = None
+    remarks: Optional[str] = None
+
+class LabRequestResponse(LabRequestBase):
+    id: int
+    request_date: datetime
+    status: LabRequestStatus
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
