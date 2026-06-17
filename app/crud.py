@@ -303,3 +303,45 @@ def delete_doctor_availability(db: Session, availability_id: int):
 
     return{"message": "Doctor availability deleted successfully"}
 
+
+# LAB SERVICE CRUD
+
+def create_lab_service(db: Session, lab_service: schemas.LabServiceCreate):
+    db_lab_service = models.LabService(**lab_service.model_dump())
+
+    db.add(db_lab_service)
+    db.commit()
+    db.refresh(db_lab_service)
+
+    return db_lab_service
+
+def get_lab_services(db: Session, skip:int = 0, limit:int = 100):
+    return(db.query(models.LabService).filter(models.LabService.is_active == True).offset(skip).limit(limit).all())
+
+def get_lab_service_by_id(db: Session, lab_service_id: int):
+    lab_service = (db.query(models.LabService).filter(models.LabService.id == lab_service_id, models.LabService.is_active == True).first())
+
+    if not lab_service:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab service not found")
+    
+    return lab_service
+
+def update_lab_service(db: Session, lab_service_id: int, lab_service_data: schemas.LabServiceUpdate):
+    lab_service = get_lab_service_by_id(db, lab_service_id)
+
+    update_data = lab_service_data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(lab_service, key, value)
+
+    db.commit()
+    db.refresh(lab_service)
+
+def delete_lab_service(db: Session, lab_service_id: int):
+    lab_service = get_lab_service_by_id(db, lab_service_id)
+
+    lab_service.is_active = False
+
+    db.commit()
+
+    return{"message": "Lab service deleted successfully"}
