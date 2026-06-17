@@ -345,3 +345,64 @@ def delete_lab_service(db: Session, lab_service_id: int):
     db.commit()
 
     return{"message": "Lab service deleted successfully"}
+
+
+# LAB REQUEST CRUD
+
+def create_lab_request(db: Session, lab_request: schemas.LabRequestCreate):
+    patient = db.query(models.Patient).filter(models.Patient.id == lab_request.patient_id, models.Patient.is_active == True).first()
+
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    
+    doctor = db.query(models.Doctor).filter(models.Doctor.id == lab_request.doctor_id, models.Doctor.is_active == True).first()
+
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found")
+    
+    lab_service = db.query(models.LabService).filter(models.LabService.id == lab_request.lab_service_id, models.LabService.is_active == True).first()
+
+    if not lab_service:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab service not found")
+    
+    db_lab_request = models.LabRequest(**lab_request.model_dump())
+
+    db.add(db_lab_request)
+    db.commit()
+    db.refresh(db_lab_request)
+
+    return db_lab_request
+
+def get_lab_requests(db: Session, skip:int=0, limit:int=100):
+    return(db.query(models.LabRequest).offset(skip).limit(limit).all())
+
+def get_lab_request_by_id(db: Session, lab_request_id: int):
+    lab_request = (db.query(models.LabRequest).filter(models.LabRequest.id == lab_request_id).first())
+
+    if not lab_request:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab request not found")
+    
+    return lab_request
+
+def update_lab_request(db:Session, lab_request_id: int, lab_request_data: schemas.LabRequestUpdate):
+    lab_request = get_lab_request_by_id(db, lab_request_id)
+
+    update_data = lab_request_data.model_dum(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(lab_request, key, value)
+
+    db.commit()
+    db.refresh(lab_request)
+
+    return lab_request
+
+def delete_lab_request(db: Session, lab_request_id: int):
+    lab_request = get_lab_request_by_id(db, lab_request_id)
+
+    lab_request.status = models.LabRequestStatus.CANCELLED
+
+    db.commit()
+    db.refresh(lab_request)
+
+    return {"message": "Lab request cancelled successfully"}
