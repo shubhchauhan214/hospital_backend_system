@@ -249,3 +249,28 @@ class LabReportResponse(LabReportBase):
 
     class Config:
         from_attributes = True
+
+
+# WARD SCHEMAS
+
+class WardBase(BaseModel):
+    name: str
+    ward_type: Optional[str] = None
+    floor_number: Optional[int] = None
+
+class WardCreate(WardBase):
+    pass
+
+class WardUpdate(BaseModel):
+    name: Optional[str] = None
+    ward_type: Optional[str] = None
+    floor_number: Optional[int] = None
+
+class WardResponse(WardBase):
+    id: int
+    is_active: bool
+    create_at: datetime
+    update_at: datetime
+
+    class Config:
+        from_attributes = True

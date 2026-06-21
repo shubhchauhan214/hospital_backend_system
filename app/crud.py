@@ -463,3 +463,47 @@ def delete_lab_report(db: Session, lab_report_id: int):
 
     return {"message": "Lab report deleted successfully"}
 
+
+# ward CRUD
+
+def create_ward(db: Session, ward: schemas.WardCreate):
+    db_ward = models.Ward(**ward.model_dump())
+
+    db.add(db_ward)
+    db.commit()
+    db.refresh(db_ward)
+
+    return db_ward
+
+def get_wards(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Ward).filter(models.Ward.is_active == True).offset(skip).limit(limit).all()
+
+
+def get_ward_by_id(db: Session, ward_id: int):
+    ward = db.query(models.Ward).filter(models.Ward.id == ward_id, models.Ward.is_active == True).first()
+
+    if not ward:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ward not found")
+    
+def update_ward(db: Session, ward_id: int, ward_data: schemas.WardUpdate):
+    ward = get_ward_by_id(db, ward_id)
+
+    update_data = ward_data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(ward, key, value)
+
+    db.commit()
+    db.refresh(ward)
+
+    return ward
+
+
+def delete_ward(db: Session, ward_id: int):
+    ward = get_ward_by_id(db, ward_id)
+
+    ward.is_active = False
+    db.commit()
+
+    return {"message": "Ward deleted successfully"}
+
