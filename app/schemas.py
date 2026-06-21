@@ -224,3 +224,28 @@ class LabRequestResponse(LabRequestBase):
 
     class Config:
         from_attributes = True
+
+# LAB REPORT SCHEMAS
+
+class LabReportBase(BaseModel):
+    lab_request_id: int
+    report_title: str
+    report_summary: Optional[str] = None
+    report_file_url: Optional[str] = None
+
+class LabReportCreate(LabReportBase):
+    pass
+
+class LabReportUpdate(BaseModel):
+    report_title: Optional[str] = None
+    report_summary: Optional[str] = None
+    report_file_url: Optional[str] = None
+
+class LabReportResponse(LabReportBase):
+    id: int
+    result_date: datetime
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

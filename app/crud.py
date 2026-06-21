@@ -406,3 +406,60 @@ def delete_lab_request(db: Session, lab_request_id: int):
     db.refresh(lab_request)
 
     return {"message": "Lab request cancelled successfully"}
+
+
+# LAB REPORT CRUD
+
+def create_lab_report(db: Session, lab_report: schemas.LabReportCreate):
+    lab_request = db.query(models.LabRequest).filter(models.LabRequest.id == lab_report.lab_request_id).first()
+
+    if not lab_request:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab request not found")
+    
+    existing_report = db.query(models.LabReport).filter(models.LabReport.lab_request_id == lab_report.lab_request_id).first()
+
+    if existing_report:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Lab report already exists for this lab request")
+    
+    db_lab_report = models.LabReport(**lab_report.model_dump())
+
+    lab_request.status = models.LabRequestStatus.COMPLETED
+
+    db.add(db_lab_report)
+    db.commit()
+    db.refresh(db_lab_report)
+
+    return db_lab_report
+
+def get_lab_reports(db: Session, skip:int=0, limit:int=100):
+    return db.query(models.LabReport).offset(skip).limit(limit).all()
+
+def get_lab_report_by_id(db: Session, lab_report_id: int):
+    lab_report = db.query(models.LabReport).filter(models.LabReport.id == lab_report_id).first()
+
+    if not lab_report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab report not found")
+    
+    return lab_report
+
+def update_lab_report(db: Session, lab_report_id: int, lab_report_data: schemas.LabReportUpdate):
+    lab_report = get_lab_report_by_id(db, lab_report_id)
+
+    update_data = lab_report_data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(lab_report, key, value)
+
+    db.commit()
+    db.refresh(lab_report)
+
+    return lab_report
+
+def delete_lab_report(db: Session, lab_report_id: int):
+    lab_report = get_lab_report_by_id(db, lab_report_id)
+
+    db.delete(lab_report)
+    db.commit()
+
+    return {"message": "Lab report deleted successfully"}
+
