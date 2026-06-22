@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 from app.models import Gender
-from app.models import AppointmentStatus, LabRequestStatus
+from app.models import AppointmentStatus, LabRequestStatus, BedStatus
 
 # USER SCHEMAS
 class UserBase(BaseModel):
@@ -271,6 +271,31 @@ class WardResponse(WardBase):
     is_active: bool
     create_at: datetime
     update_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# BED SCHEMAS
+
+class BedBase(BaseModel):
+    ward_id: int
+    bed_number: str
+    status: BedStatus = BedStatus.AVAILABLE
+    price_per_day: float = 0
+
+class BedCreate(BedBase):
+    pass 
+
+class BedUpdate(BedBase):
+    ward_id: Optional[int] = None
+    bed_number: Optional[str] = None
+    status: Optional[BedStatus] = None
+    price_per_day: Optional[float] = None
+
+class BedResponse(BedBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True

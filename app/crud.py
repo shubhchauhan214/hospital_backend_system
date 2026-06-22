@@ -507,3 +507,56 @@ def delete_ward(db: Session, ward_id: int):
 
     return {"message": "Ward deleted successfully"}
 
+
+# BED CRUD
+
+def create_bed(db: Session, bed: Session.BedCreate):
+    ward = db.query(models.Ward).filter(models.Ward.id == bed.ward_id, models.Ward.is_active == True).first()
+
+    if not ward:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ward not found")
+    
+    db_bed = models.Bed(**bed.model_dump())
+
+    db.add(db_bed)
+    db.commit()
+    db.refresh(db_bed)
+
+    return db_bed
+
+def get_beds(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Bed).offset(skip).limit(limit).all()
+
+def get_bed_by_id(db: Session, bed_id: int):
+    bed = db.query(models.Bed).filter(models.Bed.id == bed_id).first()
+
+    if not bed:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bed not found")
+    
+    return bed
+
+def get_available_beds(db: Session):
+    return db.query(models.Bed).filter(models.Bed.status == models.BedStatus.AVAILABLE).all()
+
+def update_bed(db: Session, bed_id: int, bed_data: schemas.BedUpdate):
+    bed = get_bed_by_id(db, bed_id)
+
+    update_data = bed_data.model_dump(exclude_unset= True)
+
+    for key,value in update_data.items():
+        setattr(bed, key, value)
+
+    db.commit()
+    db.refresh(bed)
+
+    return bed
+
+def delete_bed(db: Session, bed_id: int):
+    bed = get_bed_by_id(db, bed_id)
+
+    bed.status = models.BedStatus.MAINTENANCE
+
+    db.commit()
+    db.refresh(bed)
+
+    return {"message": "Bed moved to maintenance successfully"}
