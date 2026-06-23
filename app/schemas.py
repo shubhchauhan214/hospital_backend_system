@@ -434,3 +434,25 @@ class DocumentResponse(DocumentBase):
 
     class Config:
         from_attributes = True
+
+
+# AUTH SCHEMAS
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class CurrentUserResponse(BaseModel):
+    id: int
+    full_name: str
+    email: EmailStr
+    phone: str
+    role: str
+    is_active: bool
+
+    class Config:
+        from_attributes = True
