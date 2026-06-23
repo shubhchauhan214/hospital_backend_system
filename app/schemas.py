@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 from app.models import Gender
-from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus, BillStatus
+from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus, BillStatus, PaymentMode, PaymentStatus
 
 # USER SCHEMAS
 class UserBase(BaseModel):
@@ -367,6 +367,36 @@ class BillUpdate(BaseModel):
 
 class BillResponse(BillBase):
     id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+#PAYMENT SCHEMAS
+class PaymentBase(BaseModel):
+    bill_id: int
+    amount: float
+    payment_mode: PaymentMode
+    payment_status: PaymentStatus = PaymentStatus.SUCCESS
+    transaction_id: Optional[str] = None
+
+
+class PaymentCreate(PaymentBase):
+    pass
+
+
+class PaymentUpdate(BaseModel):
+    amount: Optional[float] = None
+    payment_mode: Optional[PaymentMode] = None
+    payment_status: Optional[PaymentStatus] = None
+    transaction_id: Optional[str] = None
+
+
+class PaymentResponse(PaymentBase):
+    id: int
+    payment_date: datetime
     created_at: datetime
     updated_at: datetime
 
