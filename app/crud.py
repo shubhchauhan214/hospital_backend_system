@@ -646,3 +646,68 @@ def delete_admission(db: Session, admission_id: int):
     db.commit()
 
     return {"message": "Admission closed successfully."}
+
+# BILL CRUD
+
+def create_bill(db: Session, bill: schemas.BillCreate):
+    patient = db.query(models.Patient).filter(models.Patient.id == bill.patient_id, models.Patient.is_active == True).first()
+
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    if bill.admission_id:
+        admission = db.query(models.Admission).filter(models.Admission.id == bill.admission_id).first()
+
+        if not admission:
+            raise HTTPException(status_code=404, detail="Admission not found")
+
+    existing_bill = db.query(models.Bill).filter(models.Bill.bill_number == bill.bill_number).first()
+
+    if existing_bill:
+        raise HTTPException(status_code=400,detail="Bill number already exists")
+
+    db_bill = models.Bill(**bill.model_dump())
+
+    db.add(db_bill)
+    db.commit()
+    db.refresh(db_bill)
+
+    return db_bill
+
+
+def get_bills(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Bill).offset(skip).limit(limit).all()
+
+
+def get_bill_by_id(db: Session, bill_id: int):
+    bill = db.query(models.Bill).filter(models.Bill.id == bill_id).first()
+
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+
+    return bill
+
+
+def update_bill(db: Session, bill_id: int, bill_data: schemas.BillUpdate):
+    bill = get_bill_by_id(db, bill_id)
+
+    update_data = bill_data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(bill, key, value)
+
+    db.commit()
+    db.refresh(bill)
+
+    return bill
+
+
+def delete_bill(db: Session, bill_id: int):
+    bill = get_bill_by_id(db, bill_id)
+
+    bill.status = models.BillStatus.CANCELLED
+
+    db.commit()
+    db.refresh(bill)
+
+    return {"message": "Bill cancelled successfully"}
