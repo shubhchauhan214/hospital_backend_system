@@ -711,3 +711,69 @@ def delete_bill(db: Session, bill_id: int):
     db.refresh(bill)
 
     return {"message": "Bill cancelled successfully"}
+
+# PAYMENT CRUD
+
+def create_payment(db: Session, payment: schemas.PaymentCreate):
+    bill = db.query(models.Bill).filter(models.Bill.id == payment.bill_id).first()
+
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+
+    db_payment = models.Payment(**payment.model_dump())
+
+    if payment.payment_status == models.PaymentStatus.SUCCESS:
+        bill.paid_amount = bill.paid_amount + payment.amount
+
+        if bill.paid_amount >= bill.total_amount:
+            bill.status = models.BillStatus.PAID
+        elif bill.paid_amount > 0:
+            bill.status = models.BillStatus.PARTIALLY_PAID
+
+    db.add(db_payment)
+    db.commit()
+    db.refresh(db_payment)
+
+    return db_payment
+
+
+def get_payments(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Payment).offset(skip).limit(limit).all()
+
+
+def get_payment_by_id(db: Session, payment_id: int):
+    payment = db.query(models.Payment).filter(models.Payment.id == payment_id).first()
+
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    return payment
+
+
+def get_payments_by_bill_id(db: Session, bill_id: int):
+    return db.query(models.Payment).filter(models.Payment.bill_id == bill_id).all()
+
+
+def update_payment(db: Session, payment_id: int, payment_data: schemas.PaymentUpdate):
+    payment = get_payment_by_id(db, payment_id)
+
+    update_data = payment_data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(payment, key, value)
+
+    db.commit()
+    db.refresh(payment)
+
+    return payment
+
+
+def delete_payment(db: Session, payment_id: int):
+    payment = get_payment_by_id(db, payment_id)
+
+    payment.payment_status = models.PaymentStatus.REFUNDED
+
+    db.commit()
+    db.refresh(payment)
+
+    return {"message": "Payment marked as refunded successfully"}
