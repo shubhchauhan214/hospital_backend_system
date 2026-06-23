@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 from app.models import Gender
-from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus
+from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus, BillStatus
 
 # USER SCHEMAS
 class UserBase(BaseModel):
@@ -323,6 +323,50 @@ class AdmissionResponse(AdmissionBase):
     id: int
     admission_date: datetime
     discharge_date: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# BILL SCHEMAS 
+
+class BillBase(BaseModel):
+    patient_id: int
+    admission_id: Optional[int] = None
+
+    bill_number: str
+
+    consultation_charges: float = 0
+    lab_charges: float = 0
+    bed_charges: float = 0
+    medicine_charges: float = 0
+    other_charges: float = 0
+
+    discount: float = 0
+    total_amount: float
+    paid_amount: float = 0
+
+    status: BillStatus = BillStatus.PENDING
+
+class BillCreate(BillBase):
+    pass
+
+
+class BillUpdate(BaseModel):
+    consultation_charges: Optional[float] = None
+    lab_charges: Optional[float] = None
+    bed_charges: Optional[float] = None
+    medicine_charges: Optional[float] = None
+    other_charges: Optional[float] = None
+    discount: Optional[float] = None
+    total_amount: Optional[float] = None
+    paid_amount: Optional[float] = None
+    status: Optional[BillStatus] = None
+
+
+class BillResponse(BillBase):
+    id: int
     created_at: datetime
     updated_at: datetime
 
