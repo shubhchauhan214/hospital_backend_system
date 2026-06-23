@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
@@ -560,3 +562,87 @@ def delete_bed(db: Session, bed_id: int):
     db.refresh(bed)
 
     return {"message": "Bed moved to maintenance successfully"}
+
+
+# ADMISSION CRUD
+
+def create_admission(db: Session, admission: schemas.AdmissionCreate):
+    patient = db.query(models.Patient).filter(models.Patient.id == admission.patient_id, models.Patient.is_active == True).first()
+
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+    
+    doctor = db.query(models.Doctor).filter(models.Doctor.id == admission.doctor_id, models.Doctor.is_active == True).first()
+
+    if not doctor:
+        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail="Doctor not found")
+    
+    bed = db.query(models.Bed).filter(models.Bed.id == admission.bed_id).first()
+
+    if not bed:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bed not found")
+    
+    if bed.status != models.BedStatus.AVAILABLE:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bed is not available")
+    
+    db_admission = models.Admission(**admission.model_dump())
+
+    bed.status = models.BedStatus.OCCUPIED
+
+    db.add(db_admission)
+    db.commit()
+    db.refresh(db_admission)
+
+    return db_admission
+
+def get_admissions(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Admission).offset(skip).limit(limit).all()
+
+def get_admission_by_id(db: Session, admission_id: int):
+    admission = db.query(models.Admission).filter(models.Admission.id == admission_id).first()
+
+    if not admission:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admission not found")
+    
+    return admission
+
+def update_admission(db: Session, admission_id: int, admission_data: schemas.AdmissionUpdate):
+    admission = get_admission_by_id(db, admission_id)
+
+    update_data = admission_data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(admission, key, value)
+
+    if admission.status == models.AdmissionStatus.DISCHARGED:
+        admission.bed.status = models.BedStatus.AVAILABLE
+
+    db.commit()
+    db.refresh(admission)
+
+    return admission
+
+def discharge_patient(db: Session, admission_id: int):
+    admission = get_admission_by_id(db, admission_id)
+
+    admission.status = models.AdmissionStatus.DISCHARGED
+    admission.discharge_date = datetime.utcnow()
+
+    admission.bed.status = models.BedStatus.AVAILABLE
+
+    db.commit()
+    db.refresh(admission)
+
+    return admission
+
+def delete_admission(db: Session, admission_id: int):
+    admission = get_admission_by_id(db, admission_id)
+
+    admission.status = models.AdmissionStatus.DISCHARGED
+    admission.discharge_date = datetime.utcnow()
+
+    admission.bed.status = models.BedStatus.AVAILABLE
+
+    db.commit()
+
+    return {"message": "Admission closed successfully."}

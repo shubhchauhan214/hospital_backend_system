@@ -12,7 +12,7 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=schemas.BedResposne, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=schemas.BedResponse, status_code=status.HTTP_201_CREATED)
 def create_bed(bed: schemas.BedCreate, db: Session = Depends(get_db)):
   return crud.create_bed(db=db, bed=bed)
 
@@ -22,7 +22,7 @@ def get_beds(skip: int = 0, limit: int= 100, db: Session = Depends(get_db)):
   return crud.get_beds(db=db, skip=skip, limit=limit)
 
 @router.get("/available", response_model=List[schemas.BedResponse])
-def get_available_beds(db: Session= Depends(get_db))
+def get_available_beds(db: Session= Depends(get_db)):
   return crud.get_available_beds(db=db)
 
 @router.get("/{bed_id}", response_model = schemas.BedResponse)

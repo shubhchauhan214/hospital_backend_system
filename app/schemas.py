@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 from app.models import Gender
-from app.models import AppointmentStatus, LabRequestStatus, BedStatus
+from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus
 
 # USER SCHEMAS
 class UserBase(BaseModel):
@@ -294,6 +294,35 @@ class BedUpdate(BedBase):
 
 class BedResponse(BedBase):
     id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# ADMISSION SCHEMAS
+
+class AdmissionBase(BaseModel):
+    patient_id: int
+    doctor_id: int
+    bed_id: int
+    reason: Optional[str] = None
+    status: AdmissionStatus = AdmissionStatus.ADMITTED
+
+class AdmissionCreate(AdmissionBase):
+    pass 
+
+class AdmissionUpdate(AdmissionBase):
+    doctor_id: Optional[int] = None
+    bed_id: Optional[int] = None
+    discharge_date: Optional[datetime] = None
+    reason: Optional[str] = None
+    status: Optional[AdmissionStatus]=None
+
+class AdmissionResponse(AdmissionBase):
+    id: int
+    admission_date: datetime
+    discharge_date: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
