@@ -777,3 +777,75 @@ def delete_payment(db: Session, payment_id: int):
     db.refresh(payment)
 
     return {"message": "Payment marked as refunded successfully"}
+
+# DOCUMENTS CRUD
+
+def create_document(db: Session, document: schemas.DocumentCreate):
+    patient = db.query(models.Patient).filter(models.Patient.id == document.patient_id,models.Patient.is_active == True).first()
+
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    if document.appointment_id:
+        appointment = db.query(models.Appointment).filter(models.Appointment.id == document.appointment_id).first()
+
+        if not appointment:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+
+    if document.uploaded_by:
+        user = db.query(models.User).filter(models.User.id == document.uploaded_by,models.User.is_active == True).first()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="Uploaded user not found")
+
+    db_document = models.Document(**document.model_dump())
+
+    db.add(db_document)
+    db.commit()
+    db.refresh(db_document)
+
+    return db_document
+
+
+def get_documents(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Document).offset(skip).limit(limit).all()
+
+
+def get_document_by_id(db: Session, document_id: int):
+    document = db.query(models.Document).filter(models.Document.id == document_id).first()
+
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    return document
+
+
+def get_documents_by_patient_id(db: Session, patient_id: int):
+    return db.query(models.Document).filter(models.Document.patient_id == patient_id).all()
+
+
+def update_document(
+    db: Session,
+    document_id: int,
+    document_data: schemas.DocumentUpdate
+):
+    document = get_document_by_id(db, document_id)
+
+    update_data = document_data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(document, key, value)
+
+    db.commit()
+    db.refresh(document)
+
+    return document
+
+
+def delete_document(db: Session, document_id: int):
+    document = get_document_by_id(db, document_id)
+
+    db.delete(document)
+    db.commit()
+
+    return {"message": "Document deleted successfully"}
