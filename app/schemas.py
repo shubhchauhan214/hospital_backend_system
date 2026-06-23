@@ -402,3 +402,35 @@ class PaymentResponse(PaymentBase):
 
     class Config:
         from_attributes = True
+
+
+# DOCUMENT SCHEMAS
+
+class DocumentBase(BaseModel):
+    patient_id: int
+    appointment_id: Optional[int] = None
+    document_type: str
+    file_name: str
+    file_url: str
+    description: Optional[str] = None
+    uploaded_by: Optional[int] = None
+
+
+class DocumentCreate(DocumentBase):
+    pass
+
+
+class DocumentUpdate(BaseModel):
+    document_type: Optional[str] = None
+    file_name: Optional[str] = None
+    file_url: Optional[str] = None
+    description: Optional[str] = None
+
+
+class DocumentResponse(DocumentBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
