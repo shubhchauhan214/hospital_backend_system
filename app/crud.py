@@ -4,10 +4,12 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from app import models, schemas
-from app.auth import hash_password
+from app.auth import hash_password, verify_password
 
 #USERS
 def create_user(db: Session, user: schemas.UserCreate):
+    print("PASSWORD:", user.password)
+    print("PASSWORD LENGTH:", len(user.password))
     db_user = models.User(full_name = user.full_name, email=user.email, phone=user.phone, role=user.role, password_hash=hash_password(user.password))
 
     db.add(db_user)
@@ -850,3 +852,17 @@ def delete_document(db: Session, document_id: int):
     db.commit()
 
     return {"message": "Document deleted successfully"}
+
+
+# AUTH CRUD
+
+def authenticate_user(db: Session, email: str, password: str):
+    user = db.query(models.User).filter(models.User.email == email, models.User.is_active == True).first()
+
+    if not user:
+        return None
+    
+    if not verify_password(password, user.password_hash):
+        return None
+    
+    return user
