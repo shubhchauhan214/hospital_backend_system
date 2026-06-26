@@ -2,17 +2,29 @@ from datetime import date, datetime, time
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 from app.models import Gender
-from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus, BillStatus, PaymentMode, PaymentStatus
+from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus, BillStatus, PaymentMode, PaymentStatus, UserRole
 
 # USER SCHEMAS
 class UserBase(BaseModel):
     full_name: str
     email: EmailStr
     phone: str
-    role: str
+    role: UserRole
+
 
 class UserCreate(UserBase):
     password: str
+
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
 
 class UserResponse(UserBase):
     id: int
@@ -22,7 +34,6 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
-
 
 #DEPARTMENT SCHEMAS
 

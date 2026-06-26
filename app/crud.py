@@ -21,6 +21,45 @@ def create_user(db: Session, user: schemas.UserCreate):
 def get_users(db: Session):
     return db.query(models.User).filter(models.User.is_active == True).all()
 
+def get_user_by_id(db: Session, user_id: int):
+    user = db.query(models.User).filter(models.User.id == user_id, models.User.is_active == True).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return user
+
+def update_user(db: Session, user_id: int, user_data: schemas.UserUpdate):
+    user = get_user_by_id(db, user_id)
+
+    update_data = user_data.model_dump(exclude_unset=True)
+    
+    for key, value in update_data.items():
+        setattr(user, key, value)
+
+    db.commit()
+    db.refresh(user)
+
+    return user
+
+def delete_user(db: Session, user_id: int):
+    user = get_user_by_id(db, user_id)
+
+    user.is_active = False
+
+    db.commit()
+
+    return {"message": "User deactivated successfully"}
+
+def change_password(db: Session, current_user: models.User, password_data: schemas.ChangePasswordRequest):
+    if not verify_password(password_data.old_password, current_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Old password is incorrect")
+    
+    current_user.password_hash = hash_password(password_data.new_password)
+
+    db.commit()
+
+    return {"message": "Password changed successfully"}
 
 # DEPARTMENTS
 # DEPARTMENT CREATE
