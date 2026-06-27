@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.routes import patients, doctors, users, departments, appointments, doctor_availability, lab_services, lab_requests, lab_reports, wards, beds, admissions, bills, payments, documents, auth
+from app.routes import patients, doctors, users, departments, appointments, doctor_availability, lab_services, lab_requests, lab_reports, wards, beds, admissions, bills, payments, documents, auth, dashboard
 
 app = FastAPI(
     title="Hospital Backend System",
@@ -23,6 +23,7 @@ app.include_router(bills.router)
 app.include_router(payments.router)
 app.include_router(documents.router)
 app.include_router(auth.router)
+app.include_router(dashboard.router)
 
 
 @app.get("/")

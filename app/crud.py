@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from fastapi import HTTPException, status
 
 from app import models, schemas
@@ -905,3 +906,46 @@ def authenticate_user(db: Session, email: str, password: str):
         return None
     
     return user
+
+
+# ADMIN DASHBOARD
+
+def get_admin_dashboard(db: Session):
+    today = date.today()
+
+    total_users = db.query(models.User).filter(models.User.is_active == True).count()
+
+    total_departments = db.query(models.Department).filter(models.Department.is_active == True).count()
+
+    total_doctors = db.query(models.Doctor).filter(models.Doctor.is_active ==True).count()
+
+    total_patients = db.query(models.Patient).filter(models.Patient.is_active== True).count()
+
+    today_appointments = db.query(models.Appointment).filter(models.Appointment.appointment_date == today).count()
+
+    total_admissions = db.query(models.Admission).count()
+
+    available_beds = db.query(models.Bed).filter(models.Bed.status == models.BedStatus.AVAILABLE).count()
+
+    occupied_beds = db.query(models.Bed).filter(models.Bed.status == models.BedStatus.OCCUPIED).count()
+
+    pending_bills = db.query(models.Bill).filter(models.Bill.status == models.BillStatus.PAID).count()
+
+    paid_bills = db.query(models.Bill).filter(models.Bill.status == models.BillStatus.PAID).count()
+
+    total_revenue = db.query(func.coalesce(func.sum(models.Payment.amount), 0).filter(models.Payment.payment_status == models.PaymentStatus.SUCCESS).scalar())
+
+    return{
+        "total_users": total_users,
+        "total_departments": total_departments,
+        "total_doctors": total_doctors,
+        "total_patients": total_patients,
+        "today_appointments": today_appointments,
+        "total_admissions": total_admissions,
+        "available_beds": available_beds,
+        "occupied_beds": occupied_beds,
+        "pending_bills": pending_bills,
+        "paid_bills": paid_bills,
+        "total_revenue":total_revenue or 0
+    }
+

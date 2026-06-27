@@ -467,3 +467,19 @@ class CurrentUserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# DASHBOARD SCHEMAS
+
+class AdminDashboardResponse(BaseModel):
+    total_users: int
+    total_departments: int
+    total_doctors: int
+    total_patients: int
+    today_appointments: int
+    total_admissions: int
+    available_beds: int
+    occupied_beds: int
+    pending_bills: int
+    paid_bills: int
+    total_revenue: float
