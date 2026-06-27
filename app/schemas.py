@@ -483,3 +483,12 @@ class AdminDashboardResponse(BaseModel):
     pending_bills: int
     paid_bills: int
     total_revenue: float
+
+
+class DoctorDashboardResponse(BaseModel):
+    today_appointments: int
+    total_appointments: int
+    pending_appointments: int
+    completed_appointments: int
+    availability_count: int
+    lab_requests: int

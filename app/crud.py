@@ -949,3 +949,34 @@ def get_admin_dashboard(db: Session):
         "total_revenue":total_revenue or 0
     }
 
+# DOCTOR DASHBOARD
+
+def get_doctor_dashboard(db: Session, current_user: models.User):
+    today = date.today()
+
+    doctor = db.query(models.Doctor).filter(models.Doctor.user_id == current_user.id, models.Doctor.is_active == True).first()
+
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor Profile not found")
+    
+    today_appointments = db.query(models.Appointment).filter(models.Appointment.doctor_id == doctor.id, models.Appointment.appointment_date == today).count()
+
+    total_appointments = db.query(models.Appointment).filter(models.Appointment.doctor_id == doctor.id).count()
+
+    pending_appointments = db.query(models.Appointment).filter(models.Appointment.doctor_id == doctor.id, models.Appointment.status == models.AppointmentStatus.PENDING).count()
+
+    completed_appointments = db.query(models.Appointment).filter(models.Appointment.doctor_id == doctor.id, models.Appointment.status == models.AppointmentStatus.COMPLETED).count()
+
+    availability_count = db.query(models.DoctorAvailability).filter(models.DoctorAvailability.doctor_id == doctor.id, models.DoctorAvailability.is_active == True).count()
+
+    lab_requests = db.query(models.LabRequest).filter(models.LabRequest.doctor_id == doctor.id).count()
+
+    return{
+        "today_appointments": today_appointments,
+        "total_appointments": total_appointments,
+        "pending_appointments": pending_appointments,
+        "completed_appointments": completed_appointments,
+        "availability_count": availability_count,
+        "lab_requests": lab_requests
+    }
+
