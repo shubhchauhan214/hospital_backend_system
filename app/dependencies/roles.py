@@ -32,3 +32,45 @@ lab_staff_required=role_required([
 patient_required = role_required([
   UserRole.PATIENT
 ])
+
+# FEATURE BASED ROLE GROUPS
+
+user_manager_required = role_required([
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN
+])
+
+department_manager_required = role_required([
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN
+])
+
+doctor_manager_required = role_required([
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN
+])
+
+appointment_manager_required = role_required([
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.RECEPTIONIST
+])
+
+billing_manager_required = role_required([
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.RECEPTIONIST
+])
+
+lab_manager_required = role_required([
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.LAB_STAFF
+])
+
+admission_manager_required = role_required([
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.RECEPTIONIST
+])
+
