@@ -265,6 +265,16 @@ def get_appointment_by_id(db: Session, appointment_id: int):
     
     return appointment
 
+# GET DOCTORS' APPOINTMENTS
+
+def get_my_doctor_appointments(db: Session, current_user: models.User, skip:int = 0, limit: int = 100):
+    doctor = db.query(models.Doctor).filter(models.Doctor.user_id == current_user.id, models.Doctor.is_active == True).first()
+
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor Profile not found")
+    
+    return(db.query(models.Appointment).filter(models.Appointment.doctor_id == doctor.id).offset(skip).limit(limit).all())
+
 # UPDATE APPOINTMENT
 def update_appointment(db: Session, appointment_id: int, appointment_data: schemas.AppointmentUpdate):
     appointment = get_appointment_by_id(db, appointment_id)

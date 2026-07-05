@@ -2,7 +2,7 @@ from datetime import date, datetime, time
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 from app.models import Gender
-from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus, BillStatus, PaymentMode, PaymentStatus, UserRole
+from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus, BillStatus, PaymentMode, PaymentStatus, UserRole, AppointmentStatus 
 
 # USER SCHEMAS
 class UserBase(BaseModel):
@@ -155,6 +155,11 @@ class AppointmentResponse(AppointmentBase):
 
     class Config:
         from_attributes = True
+
+# APPOINTMENT STATUS SCHEMA
+
+class AppointmentStatusUpdate(BaseModel):
+    status: AppointmentStatus
 
 
 # DOCTOR AVAILABILITY SCHEMA
