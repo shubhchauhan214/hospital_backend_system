@@ -316,6 +316,18 @@ def create_doctor_availability(db: Session, availability: schemas.DoctorAvailabi
 
     return db_availability
 
+# UPDATE APPOINTMENT STATUS
+
+def update_appointment_status(db: Session, appointment_id: int, status_data: schemas.AppointmentStatusUpdate):
+    appointment = get_appointment_by_id(db, appointment_id)
+
+    appointment.status = status_data.status
+    
+    db.commit()
+    db.refresh(appointment)
+
+    return appointment
+
 # GET DOCTOR AVAILABILITIES
 def get_doctor_availibilities(db: Session, skip:int=0, limit:int=100):
     return(db.query(models.DoctorAvailability).filter(models.DoctorAvailability.is_active == True).offset(skip).limit(limit).all())
