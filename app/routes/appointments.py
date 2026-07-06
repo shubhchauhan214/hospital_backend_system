@@ -21,6 +21,11 @@ def get_appointments(skip:int =0, limit:int=100, db:Session=Depends(get_db), cur
 def get_my_appointments(skip:int = 0, limit: int = 100, db: Session = Depends(get_db), current_user=Depends(doctor_required)):
     return crud.get_my_doctor_appointments(db=db, current_user=current_user, skip=skip, limit=limit)
 
+@router.patch("/{appointment_id}/consultation", response_model=schemas.AppointmentResponse)
+def complete_consultation(appointment_id: int, consultation_data: schemas.AppointmentConsultationUpdate, db: Session = Depends(get_db), current_user=Depends(doctor_required)):
+    return crud.complete_doctor_consultation(db=db, appointment_id=appointment_id, consultation_data=consultation_data, current_user=current_user)
+
+
 @router.get("/{appointment_id}", response_model=schemas.AppointmentResponse)
 def get_appointment(appointment_id: int, db: Session = Depends(get_db), current_user=Depends(appointment_manager_required)):
     return crud.get_appointment_by_id(db=db, appointment_id=appointment_id)

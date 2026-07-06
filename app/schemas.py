@@ -156,10 +156,16 @@ class AppointmentResponse(AppointmentBase):
     class Config:
         from_attributes = True
 
-# APPOINTMENT STATUS SCHEMA
+# APPOINTMENT STATUS SCHEMA (We have added it later)
 
 class AppointmentStatusUpdate(BaseModel):
     status: AppointmentStatus
+
+# APPOINTMENT CONSULTATION UPDATE (We have added it later)
+
+class AppointmentConsultationUpdate(BaseModel):
+    notes: str
+    status: AppointmentStatus = AppointmentStatus.COMPLETED
 
 
 # DOCTOR AVAILABILITY SCHEMA

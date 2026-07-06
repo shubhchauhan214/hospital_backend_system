@@ -1002,3 +1002,31 @@ def get_doctor_dashboard(db: Session, current_user: models.User):
         "lab_requests": lab_requests
     }
 
+# DOCTOR CONSULTATION WORKFLOW
+
+def complete_doctor_consultation(db: Session, appointment_id: int, consultation_data: schemas.AppointmentConsultationUpdate, current_user: models.User):
+    doctor = db.query(models.Doctor).filter(models.Doctor.user_id == current_user.id, models.Doctor.is_active == True).first()
+
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor Profile not found")
+    
+    appointment = db.query(models.Appointment).filter(models.Appointment.id == appointment_id, models.Appointment.doctor_id == doctor.id).first()
+
+    if not appointment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found for this doctor")
+    
+    if appointment.status == models.AppointmentStatus.CANCELLED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cancelled appointment cannot be completed")
+    
+    appointment.notes = consultation_data.notes
+    appointment.status = models.Appointment_data.status 
+
+    db.commit()
+    db.refresh(appointment)
+
+    return appointment
+    
+
+
+
+
