@@ -225,7 +225,7 @@ class LabServiceResponse(LabServiceBase):
 
 class LabRequestBase(BaseModel):
     patient_id: int
-    doctor_id: int
+    # doctor_id: int
     appointment_id: Optional[int] = None
     lab_service_id: int
     remarks: Optional[str] = None
@@ -239,6 +239,11 @@ class LabRequestUpdate(BaseModel):
 
 class LabRequestResponse(LabRequestBase):
     id: int
+    patient_id: int
+    doctor_id: int
+    appointment_id: Optional[int] = None
+    lab_service_id: int
+    remarks: Optional[str] = None
     request_date: datetime
     status: LabRequestStatus
     created_at: datetime
