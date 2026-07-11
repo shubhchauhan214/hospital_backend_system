@@ -14,8 +14,8 @@ router = APIRouter(
 
 # DOCTOR, ADMIN AND SUPER ADMIN CAN CREATE LAB REQUESTS
 @router.post("/", response_model=schemas.LabRequestResponse, status_code=status.HTTP_201_CREATED)
-def create_lab_request(lab_request: schemas.LabRequestCreate, db: Session=Depends(get_db), current_user=Depends(lab_request_creator_required)):
-    return crud.create_lab_request(db=db, lab_request=lab_request)
+def create_lab_request(lab_request: schemas.LabRequestCreate, db: Session=Depends(get_db), current_user=Depends(doctor_required)):
+    return crud.create_lab_request(db=db, lab_request=lab_request, current_user=current_user)
 
 # LAB STAFF AND ADMIN CAN GET ALL LAB REQUESTS
 @router.get("/", response_model=List[schemas.LabRequestResponse])
