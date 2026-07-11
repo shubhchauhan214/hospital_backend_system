@@ -416,23 +416,30 @@ def delete_lab_service(db: Session, lab_service_id: int):
 
 # LAB REQUEST CRUD
 
-def create_lab_request(db: Session, lab_request: schemas.LabRequestCreate):
+def create_lab_request(db: Session, lab_request: schemas.LabRequestCreate, current_user: models.User):
     patient = db.query(models.Patient).filter(models.Patient.id == lab_request.patient_id, models.Patient.is_active == True).first()
 
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     
-    doctor = db.query(models.Doctor).filter(models.Doctor.id == lab_request.doctor_id, models.Doctor.is_active == True).first()
+    doctor = db.query(models.Doctor).filter(models.Doctor.user_id == current_user.id, models.Doctor.is_active == True).first()
 
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor Profile not found")
     
     lab_service = db.query(models.LabService).filter(models.LabService.id == lab_request.lab_service_id, models.LabService.is_active == True).first()
 
     if not lab_service:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lab service not found")
     
-    db_lab_request = models.LabRequest(**lab_request.model_dump())
+    if lab_request.appointment_id is None:
+        appointment = db.query(models.Appointment).filter(models.Appointment.id == lab_request.appointment_id, models.Apppointment.doctor_id == doctor.id, models.Appointment.patient_id == lab_request.patient_id).first()
+
+        if not appointment:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found for this patient and doctor")
+    
+    db_lab_request = models.LabRequest(patient_id=lab_request.patient_id, doctor_id=doctor.id, appointment_id=lab_request.appointment_id, lab_service_id=lab_request.lab_service_id, remarks=lab_request.remarks)
+    
 
     db.add(db_lab_request)
     db.commit()
