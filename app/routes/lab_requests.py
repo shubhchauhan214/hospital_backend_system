@@ -7,7 +7,7 @@ from app.database import get_db
 from app import crud, schemas
 
 router = APIRouter(
-  prefix="/Lab-requests",
+  prefix="/lab-requests",
   tags=["Lab Requests"]
 )
 

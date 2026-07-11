@@ -74,3 +74,9 @@ admission_manager_required = role_required([
   UserRole.RECEPTIONIST
 ])
 
+lab_request_creator_required = role_required([
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.DOCTOR
+])
+
