@@ -1027,6 +1027,16 @@ def complete_doctor_consultation(db: Session, appointment_id: int, consultation_
     return appointment
     
 
+# DOCTOR OWN LAB REQUESTS
+
+def get_my_doctor_lab_requests(db: Session, current_user: models.User, skip: int = 0, limit: int = 100):
+    doctor = db.query(models.Doctor).filter(models.Doctor.user_id == current_user.id, models.Doctor.is_active == True).first()
+
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor Profile not found")
+    
+    return db.query(models.LabRequest).filter(models.LabRequest.doctor_id == doctor.id).offset(skip).limit(limit).all()
+
 
 
 
