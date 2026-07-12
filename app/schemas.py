@@ -1,8 +1,8 @@
 from datetime import date, datetime, time 
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
 from app.models import Gender
-from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus, BillStatus, PaymentMode, PaymentStatus, UserRole, AppointmentStatus 
+from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus, BillStatus, PaymentMode, PaymentStatus, UserRole, AppointmentStatus , DayofWeek
 
 # USER SCHEMAS
 class UserBase(BaseModel):
@@ -167,29 +167,38 @@ class AppointmentConsultationUpdate(BaseModel):
     notes: str
     status: AppointmentStatus = AppointmentStatus.COMPLETED
 
-
+# ==============================================================================================================
 # DOCTOR AVAILABILITY SCHEMA
+# ==============================================================================================================
 
 class DoctorAvailabilityBase(BaseModel):
-    doctor_id: int
-    day_of_week: str
+    doctor_id: int = Field(gt=0)
+    day_of_week: DayofWeek
     start_time: time
     end_time: time
-    max_patients: Optional[int] = None
-    is_active: bool = True
+    max_patients: Optional[int] = Field(default=None, gt=0)
+
+    @model_validator(mode="after")
+    def validate_time_range(self):
+        if self.start_time >= self.end_time:
+            raise ValueError("start_time must be earlier than end_time")
+        
+        return self
+    
 
 class DoctorAvailabilityCreate(DoctorAvailabilityBase):
     pass 
 
 class DoctorAvailabilityUpdate(BaseModel):
-    day_of_week: Optional[str] = None
+    day_of_week: Optional[DayofWeek] = None
     start_time: Optional[time] = None
     end_time: Optional[time] = None
-    max_patients: Optional[int] = None
+    max_patients: Optional[int] = Field(default=None, gt=0)
     is_active: Optional[bool] = None
 
 class DoctorAvailabilityResponse(DoctorAvailabilityBase):
     id: int
+    is_active: bool
     created_at: datetime
     updated_at: datetime
 
