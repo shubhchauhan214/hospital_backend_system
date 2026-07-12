@@ -1,6 +1,6 @@
 from datetime import date, datetime, time 
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from app.models import Gender
 from app.models import AppointmentStatus, LabRequestStatus, BedStatus, AdmissionStatus, BillStatus, PaymentMode, PaymentStatus, UserRole, AppointmentStatus 
 
@@ -128,7 +128,7 @@ class DoctorResponse(DoctorBase):
 #APPOINTMENT SCHEMA
 
 class AppointmentBase(BaseModel):
-    patient_id: int
+    patient_id: int = Field(gt=0)
     doctor_id: int
     appointment_date: date
     appointment_time: time

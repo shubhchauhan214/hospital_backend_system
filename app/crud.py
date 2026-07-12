@@ -193,7 +193,9 @@ def create_doctor(db: Session, doctor:schemas.DoctorCreate):
 
 # GET ALL DOCTORS
 def get_doctors(db: Session, skip: int = 0, limit: int = 100):
-    db_doctor = db.query(models.Doctor).filter(models.Doctor.is_active == True).offset(skip).limit(limit).all()
+    db_doctors = db.query(models.Doctor).filter(models.Doctor.is_active == True).offset(skip).limit(limit).all()
+
+    return db_doctors
 
 # GET DOCTOR BY ID
 def get_doctor_by_id(db: Session, doctor_id: int):
@@ -221,7 +223,7 @@ def update_doctor(db:Session, doctor_id: int, doctor_data: schemas.DoctorUpdate)
 # DELETE DOCTOR
 def delete_doctor(db:Session, doctor_id: int):
     doctor = get_doctor_by_id(db, doctor_id)
-    doctor.is_active == False
+    doctor.is_active = False
     
     db.commit()
 
@@ -504,6 +506,16 @@ def create_lab_report(db: Session, lab_report: schemas.LabReportCreate):
     db.refresh(db_lab_report)
 
     return db_lab_report
+
+# DOCTOR CAN  GET HIS/HER OWN LAB REPORTS
+def get_my_doctor_lab_reports(db: Session, current_user: models.User, skip: int=0, limit:int=100):
+    doctor = db.query(models.Doctor).filter(models.Doctor.user_id == current_user.id, models.Doctor.is_active == True).first()
+
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor profile not found")
+    
+    return (db.query(models.LabReport).join(models.LabRequest, models.LabReport.lab_request_id == models.LabRequest.id).filter(models.LabRequest.doctor_id == doctor.id).offset(skip).limit(limit).all())
+
 
 def get_lab_reports(db: Session, skip:int=0, limit:int=100):
     return db.query(models.LabReport).offset(skip).limit(limit).all()

@@ -58,6 +58,15 @@ class PaymentStatus(str, Enum):
     FAILED = "FAILED"
     REFUNDED ="REFUNDED"
 
+class DayofWeek(str, Enum):
+    MONDAY = "MONDAY"
+    TUESDAY = "TUESDAY"
+    WEDNESDAY = "WEDNESDAY"
+    THURSDAY = "THURSDAY"
+    FRIDAY = "FRIDAY"
+    SATURDAY = "SATURDAY"
+    SUNDAY = "SUNDAY"
+
 
 class TimestampMixin:
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -184,7 +193,7 @@ class Appointment(TimestampMixin, Base):
     reason = Column(Text, nullable=True)
     status = Column(SqlEnum(AppointmentStatus), default=AppointmentStatus.PENDING)
 
-    consulation_fee = Column(Numeric(10,2), default=0)
+    consultation_fee = Column(Numeric(10,2),nullable=False, default=0)
     notes = Column(Text, nullable=True)
 
     patient = relationship("Patient", back_populates="appointments")
