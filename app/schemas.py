@@ -194,7 +194,7 @@ class DoctorAvailabilityUpdate(BaseModel):
     start_time: Optional[time] = None
     end_time: Optional[time] = None
     max_patients: Optional[int] = Field(default=None, gt=0)
-    is_active: Optional[bool] = None
+    # is_active: Optional[bool] = None
 
 class DoctorAvailabilityResponse(DoctorAvailabilityBase):
     id: int

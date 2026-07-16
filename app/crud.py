@@ -254,6 +254,16 @@ def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
 
     return db_appointment
 
+def update_appointment_status(db: Session, appointment_id: int, status_data: schemas.AppointmentStatusUpdate):
+    appointment = get_appointment_by_id(db, appointment_id)
+
+    appointment.status = status_data.status
+    
+    db.commit()
+    db.refresh(appointment)
+
+    return appointment
+
 # GET ALL APPOINTMENTS
 def get_appointments(db: Session, skip:int = 0, limit:int = 100):
     return (db.query(models.Appointment).offset(skip).limit(limit).all())
@@ -308,31 +318,58 @@ def create_doctor_availability(db: Session, availability: schemas.DoctorAvailabi
     doctor = (db.query(models.Doctor).filter(models.Doctor.id == availability.doctor_id, models.Doctor.is_active == True).first())
 
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Active Doctor not found")
     
-    db_availability = models.DoctorAvailability(**availability.model_dump())
+    if availability.start_time >= availability.end_time:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start time must be earlier than end time.")
+    
+    overlapping_slot = (db.query(models.DoctorAvailability).filter(
+        models.DoctorAvailability.doctor_id == availability.doctor_id,
+
+        models.DoctorAvailability.day_of_week == availability.day_of_week.value,
+
+        models.DoctorAvailability.is_active == True,
+
+        models.DoctorAvailability.start_time < availability.end_time,
+
+        models.DoctorAvailability.end_time > availability.start_time
+    ).first())
+
+    if overlapping_slot:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor already has an overlapping" "availability slot.")
+    
+    availability_data = availability.model_dump()
+
+    if hasattr(availability_data["day_of_week"], "value"):
+        availability_data["day_of_week"] = (availability_data["day_of_week"].value)
+
+    availability_data["is_active"] = True
+
+    
+    db_availability = models.DoctorAvailability(**availability_data)
 
     db.add(db_availability)
-    db.commit()
-    db.refresh(db_availability)
+
+    try:
+        db.commit()
+        db.refresh(db_availability)
+    except Exception:
+        db.rollback()
+        raise
 
     return db_availability
 
-# UPDATE APPOINTMENT STATUS
 
-def update_appointment_status(db: Session, appointment_id: int, status_data: schemas.AppointmentStatusUpdate):
-    appointment = get_appointment_by_id(db, appointment_id)
-
-    appointment.status = status_data.status
-    
-    db.commit()
-    db.refresh(appointment)
-
-    return appointment
 
 # GET DOCTOR AVAILABILITIES
-def get_doctor_availibilities(db: Session, skip:int=0, limit:int=100):
-    return(db.query(models.DoctorAvailability).filter(models.DoctorAvailability.is_active == True).offset(skip).limit(limit).all())
+def get_doctor_availabilities(db: Session, skip:int=0, limit:int=100):
+    return(db.query(models.DoctorAvailability).filter(models.DoctorAvailability.is_active == True)
+           .order_by(
+               models.DoctorAvailability.doctor_id,
+               models.DoctorAvailability.day_of_week,
+               models.DoctorAvailability.start_time
+           )
+           .offset(skip).limit(limit).all())
 
 # GET DOCTOR AVAILABILITY
 def get_doctor_availability_by_id(db:Session, availability_id: int):
@@ -343,34 +380,124 @@ def get_doctor_availability_by_id(db:Session, availability_id: int):
     
     return availability
 
-# GET AVAILABILITY BY DOCTOR
-def get_availability_by_doctor_id(db:Session, doctor_id: int):
-    return (db.query(models.DoctorAvailability).filter(models.DoctorAvailability.doctor_id == doctor_id, models.DoctorAvailability.is_active == True).all())
+# GET AVAILABILITY BY DOCTOR ID
+def get_availability_by_doctor_id(
+    db: Session,
+    doctor_id: int
+):
+    doctor = (
+        db.query(models.Doctor)
+        .filter(
+            models.Doctor.id == doctor_id,
+            models.Doctor.is_active.is_(True)
+        )
+        .first()
+    )
 
+    if not doctor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Active doctor not found."
+        )
+
+    return (
+        db.query(models.DoctorAvailability)
+        .filter(
+            models.DoctorAvailability.doctor_id == doctor_id,
+            models.DoctorAvailability.is_active.is_(True)
+        )
+        .order_by(
+            models.DoctorAvailability.day_of_week,
+            models.DoctorAvailability.start_time
+        )
+        .all()
+    )
 
 # UPDATE DOCTOR AVAILABILITY
 def update_doctor_availability(db: Session, availability_id: int, availability_data: schemas.DoctorAvailabilityUpdate):
-    availability = get_doctor_availability_by_id(db, availability_id)
+    availability = get_doctor_availability_by_id(db=db, availability_id=availability_id)
 
     update_data = availability_data.model_dump(exclude_unset=True)
 
-    for key, value in update_data.itmes():
+    new_day = update_data.get("day_of_week", availability.day_of_week)
+
+    if hasattr(new_day, "value"):
+        new_day = new_day.value
+
+    new_start_time = update_data.get("start_time", availability.start_time)
+
+    new_end_time = update_data.get("end_time", availability.end_time)
+
+    if new_start_time >= new_end_time:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start time must be earlier than end time.")
+    
+    # Check overlap with another availability
+    overlapping_slot = (db.query(models.DoctorAvailability)
+                        .filter(
+                            models.DoctorAvailability.doctor_id == availability.doctor_id,
+
+                            models.DoctorAvailability.day_of_week == new_day,
+
+                            models.DoctorAvailability.id != availability.id,
+
+                            models.DoctorAvailability.is_active == True,
+
+                            models.DoctorAvailability.end_time > new_start_time,
+
+                            models.DoctorAvailability.end_time > new_start_time
+                        ).first()
+    )
+
+    if overlapping_slot:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=("Updated slot overlaps with another" "doctor availability slot."))
+
+    for key, value in update_data.items():
+        if key == "day_of_week" and hasattr(value, "value"):
+            value = value.value
+
         setattr(availability, key, value)
 
-    db.commit()
-    db.refresh(availability)
+    try:
+        db.commit()
+        db.refresh(availability)
+    
+    except Exception:
+        db.rollback()
+        raise
 
     return availability
 
 # DELETE DOCTOR AVAILABILITY
 def delete_doctor_availability(db: Session, availability_id: int):
-    availability = get_doctor_availability_by_id(db, availability_id)
+    availability = get_doctor_availability_by_id(db=db, availability_id = availability_id)
 
-    availability.is_active == False
+    availability.is_active = False
 
-    db.commit()
+    try:
+        db.commit()
+        db.refresh(availability)
+    except Exception:
+        db.rollback()
+        raise
 
-    return{"message": "Doctor availability deleted successfully"}
+    return{"message": "Doctor availability deleted successfully."}
+
+# AVAILABILITY CRUD
+
+def update_appointment_status(db: Session, appointment_id: int, status_data: schemas.AppointmentStatusUpdate):
+    appointment = get_appointment_by_id(db=db, appointment_id=appointment_id)
+
+    appointment.status = status_data.status
+
+    try:
+        db.commit()
+        db.refresh(appointment)
+    
+    except Exception:
+        db.rollback()
+        raise
+
+    return appointment
 
 
 # LAB SERVICE CRUD
