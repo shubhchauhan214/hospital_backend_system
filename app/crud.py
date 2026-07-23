@@ -237,20 +237,85 @@ def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
     patient = (db.query(models.Patient).filter(models.Patient.id == appointment.patient_id, models.Patient.is_active == True).first())
 
     if not patient:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Active Patient not found")
 
 
     # Check doctor exists
     doctor = (db.query(models.Doctor).filter(models.Doctor.id == appointment.doctor_id, models.Doctor.is_active == True).first())
 
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Active Doctor not found.")
     
+    # Check doctor is generally accepting appointments
+    if not doctor.is_available:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor is currently not accepting appointments.")
+    
+    # Convert appointment date into weekday
+    appointment_day = (appointment.appointment_date.strftime("%A").upper())
+
+    # Check doctor has availability on requested day
+    day_availability = (
+        db.query(models.DoctorAvailability)
+        .filter(
+            models.DoctorAvailability.doctor_id == appointment.doctor_id,
+
+            models.DoctorAvailability.day_of_week == appointment_day,
+
+            models.DoctorAvailability.is_active == True
+            )
+            .first()
+    )
+
+    if not day_availability:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=(f"Doctor not available on {appointment_day}."))
+    
+    # Check Appointment time lies inside any active working slot
+    matching_availability = (
+        db.query(models.DoctorAvailability)
+        .filter(
+            models.DoctorAvailability.doctor_id == appointment.doctor_id,
+
+            models.DoctorAvailability.day_of_week == appointment_day,
+
+            models.DoctorAvailability.is_active == True,
+
+            models.DoctorAvailability.start_time <= appointment.appointment_time,
+
+            models.DoctorAvailability.end_time > appointment.appointment_time
+        )
+        .first()
+    )
+
+    if not matching_availability:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor is not available at the selected time.")
+    
+    # Duplicate appointment check
+    existing_appointment = (
+        db.query(models.Appointment)
+        .filter(
+            models.Appointment.doctor_id == appointment.doctor_id,
+            models.Appointment.appointment_date == appointment.appointment_date,
+            models.Appointment.appointment_time == appointment.appointment_time,
+            models.Appointment.status != models.AppointmentStatus.CANCELLED
+        )
+        .first()
+    )
+
+    if existing_appointment:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor already has an appointment at this date and time.")
+    
+    # Create Appointment
     db_appointment = models.Appointment(**appointment.model_dump())
 
     db.add(db_appointment)
-    db.commit()
-    db.refresh(db_appointment)
+
+    try:
+        db.commit()
+        db.refresh(db_appointment)
+
+    except Exception:
+        db.rollback()
+        raise
 
     return db_appointment
 
