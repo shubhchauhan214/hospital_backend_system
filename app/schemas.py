@@ -1,4 +1,5 @@
 from datetime import date, datetime, time 
+from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
 from app.models import Gender
@@ -133,7 +134,6 @@ class AppointmentBase(BaseModel):
     appointment_date: date
     appointment_time: time
     reason: Optional[str] = None
-    consultation_fee: float = 0
     notes: Optional[str] = None
 
 class AppointmentCreate(AppointmentBase):
@@ -149,7 +149,14 @@ class AppointmentUpdate(BaseModel):
 
 class AppointmentResponse(AppointmentBase):
     id: int
+    patient_id: int
+    doctor_id: int
+    appointment_date: date
+    appointment_time: time
+    reason: Optional[str] = None
     status: AppointmentStatus
+    consultation_fee: Decimal
+    notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
