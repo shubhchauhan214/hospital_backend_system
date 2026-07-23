@@ -250,6 +250,10 @@ def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
     if not doctor.is_available:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor is currently not accepting appointments.")
     
+    # Check Appointment date is not in the past
+    if appointment.appointment_date < date.today():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Appointment date cannot be in the past.")
+    
     # Convert appointment date into weekday
     appointment_day = (appointment.appointment_date.strftime("%A").upper())
 
@@ -305,7 +309,12 @@ def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor already has an appointment at this date and time.")
     
     # Create Appointment
-    db_appointment = models.Appointment(**appointment.model_dump())
+    appointment_data = appointment.model_dump()
+
+    appointment_data["consultation_fee"] = doctor.consultation_fee
+    appointment_data["status"] = models.AppointmentStatus.PENDING
+
+    db_appointment = models.Appointment(**appointment_data)
 
     db.add(db_appointment)
 
