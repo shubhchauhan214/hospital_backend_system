@@ -1,0 +1,1 @@
+HOSPITAL_TIMEZONE = "Asia/Kolkata"

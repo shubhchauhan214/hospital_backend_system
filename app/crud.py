@@ -1,4 +1,6 @@
 from datetime import datetime, date
+from zoneinfo import ZoneInfo
+from app.config import HOSPITAL_TIMEZONE
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -250,9 +252,23 @@ def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
     if not doctor.is_available:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor is currently not accepting appointments.")
     
+    # Get current date and time according to hospital timezone
+    hospital_tz = ZoneInfo(HOSPITAL_TIMEZONE)
+
+    current_datetime = datetime.now(hospital_tz)
+    current_date = current_datetime.date()
+    current_time = current_datetime.time().replace(tzinfo=None)
+    
     # Check Appointment date is not in the past
-    if appointment.appointment_date < date.today():
+    if appointment.appointment_date < current_date:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Appointment date cannot be in the past.")
+    
+    # Check today's appointment time is not in the past
+    if (appointment.appointment_date == current_date and appointment.appointment_time <= current_time):
+        current_time = datetime.now().time()
+
+        if appointment.appointment_time <= current_time:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Appointment time cannot be in the past.")
     
     # Convert appointment date into weekday
     appointment_day = (appointment.appointment_date.strftime("%A").upper())
