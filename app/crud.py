@@ -9,7 +9,10 @@ from fastapi import HTTPException, status
 from app import models, schemas
 from app.auth import hash_password, verify_password
 
+#--------------------------------------------------------------------------------------------------------------------------------------------------
 #USERS
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+
 def create_user(db: Session, user: schemas.UserCreate):
     print("PASSWORD:", user.password)
     print("PASSWORD LENGTH:", len(user.password))
@@ -64,7 +67,10 @@ def change_password(db: Session, current_user: models.User, password_data: schem
 
     return {"message": "Password changed successfully"}
 
+#-------------------------------------------------------------------------------------------------------------------------------------------------
 # DEPARTMENTS
+#------------------------------------------------------------------------------------------------------------------------------------------------
+
 # DEPARTMENT CREATE
 def create_department(db: Session , department:schemas.DepartmentCreate):
     db_department = models.Department(**department.model_dump())
@@ -235,45 +241,58 @@ def delete_doctor(db:Session, doctor_id: int):
 # APPOINTMENT CRUD
 # CREATE APPOINTMENT
 def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
-    # Check patient exists
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    # Check active patient exists
+    #---------------------------------------------------------------------------------------------------------------------------------------
     patient = (db.query(models.Patient).filter(models.Patient.id == appointment.patient_id, models.Patient.is_active == True).first())
 
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Active Patient not found")
 
-
-    # Check doctor exists
+    #----------------------------------------------------------------------------------------------------------------------------------------
+    # Check active doctor exists
+    #----------------------------------------------------------------------------------------------------------------------------------------
     doctor = (db.query(models.Doctor).filter(models.Doctor.id == appointment.doctor_id, models.Doctor.is_active == True).first())
 
     if not doctor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Active Doctor not found.")
-    
-    # Check doctor is generally accepting appointments
+
+    #----------------------------------------------------------------------------------------------------------------------------------------
+    # Check doctor is accepting appointments
+    #----------------------------------------------------------------------------------------------------------------------------------------
     if not doctor.is_available:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor is currently not accepting appointments.")
-    
+
+    #----------------------------------------------------------------------------------------------------------------------------------------
     # Get current date and time according to hospital timezone
+    #----------------------------------------------------------------------------------------------------------------------------------------
     hospital_tz = ZoneInfo(HOSPITAL_TIMEZONE)
 
     current_datetime = datetime.now(hospital_tz)
     current_date = current_datetime.date()
     current_time = current_datetime.time().replace(tzinfo=None)
-    
+
+    #----------------------------------------------------------------------------------------------------------------------------------------
     # Check Appointment date is not in the past
+    #----------------------------------------------------------------------------------------------------------------------------------------
     if appointment.appointment_date < current_date:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Appointment date cannot be in the past.")
-    
-    # Check today's appointment time is not in the past
-    if (appointment.appointment_date == current_date and appointment.appointment_time <= current_time):
-        current_time = datetime.now().time()
 
-        if appointment.appointment_time <= current_time:
+    #----------------------------------------------------------------------------------------------------------------------------------------
+    # Check today's appointment time is not in the past
+    #----------------------------------------------------------------------------------------------------------------------------------------
+    if (appointment.appointment_date == current_date and appointment.appointment_time <= current_time):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Appointment time cannot be in the past.")
-    
+
+    #----------------------------------------------------------------------------------------------------------------------------------------
     # Convert appointment date into weekday
+    #----------------------------------------------------------------------------------------------------------------------------------------
     appointment_day = (appointment.appointment_date.strftime("%A").upper())
 
+    #----------------------------------------------------------------------------------------------------------------------------------------
     # Check doctor has availability on requested day
+    #----------------------------------------------------------------------------------------------------------------------------------------
     day_availability = (
         db.query(models.DoctorAvailability)
         .filter(
@@ -288,8 +307,10 @@ def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
 
     if not day_availability:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=(f"Doctor not available on {appointment_day}."))
-    
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
     # Check Appointment time lies inside any active working slot
+    #---------------------------------------------------------------------------------------------------------------------------------------
     matching_availability = (
         db.query(models.DoctorAvailability)
         .filter(
@@ -308,8 +329,30 @@ def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
 
     if not matching_availability:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor is not available at the selected time.")
-    
+
+    #-------------------------------------------------------------------------------------------------------------------------------------
+    # Check maximum patient capacity for this availability slot
+    #-------------------------------------------------------------------------------------------------------------------------------------
+    if matching_availability.max_patients is not None:
+
+        booked_patients=(
+            db.query(models.Appointment)
+            .filter(
+                models.Appointment.doctor_id == appointment.doctor_id,
+                models.Appointment.appointment_date == appointment.appointment_date,
+                models.Appointment.appointment_time >= matching_availability.start_time,
+                models.Appointment.appointment_time < matching_availability.end_time,
+                models.Appointment.status != models.AppointmentStatus.CANCELLED
+            )
+            .count()
+        )
+
+        if booked_patients >= matching_availability.max_patients:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Maximum patient capacity reached for this availability slot.")
+
+    #-------------------------------------------------------------------------------------------------------------------------------------------
     # Duplicate appointment check
+    #-------------------------------------------------------------------------------------------------------------------------------------------
     existing_appointment = (
         db.query(models.Appointment)
         .filter(
@@ -323,8 +366,10 @@ def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
 
     if existing_appointment:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor already has an appointment at this date and time.")
-    
-    # Create Appointment
+
+    #------------------------------------------------------------------------------------------------------------------------------------------
+    # Prepare Appointment Data
+    #------------------------------------------------------------------------------------------------------------------------------------------
     appointment_data = appointment.model_dump()
 
     appointment_data["consultation_fee"] = doctor.consultation_fee
@@ -334,6 +379,9 @@ def create_appointment(db: Session, appointment: schemas.AppointmentCreate):
 
     db.add(db_appointment)
 
+    #------------------------------------------------------------------------------------------------------------------------------------------
+    # Save Appointment
+    #------------------------------------------------------------------------------------------------------------------------------------------
     try:
         db.commit()
         db.refresh(db_appointment)
@@ -426,7 +474,7 @@ def create_doctor_availability(db: Session, availability: schemas.DoctorAvailabi
     ).first())
 
     if overlapping_slot:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor already has an overlapping" "availability slot.")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Doctor already has an overlapping availability slot.")
     
     availability_data = availability.model_dump()
 
@@ -504,38 +552,63 @@ def get_availability_by_doctor_id(
     )
 
 # UPDATE DOCTOR AVAILABILITY
-def update_doctor_availability(db: Session, availability_id: int, availability_data: schemas.DoctorAvailabilityUpdate):
-    availability = get_doctor_availability_by_id(db=db, availability_id=availability_id)
+def update_doctor_availability(
+    db: Session,
+    availability_id: int,
+    availability_data: schemas.DoctorAvailabilityUpdate
+):
+    availability = get_doctor_availability_by_id(
+        db=db,
+        availability_id=availability_id
+    )
 
     update_data = availability_data.model_dump(exclude_unset=True)
 
-    new_day = update_data.get("day_of_week", availability.day_of_week)
+    new_day = update_data.get(
+        "day_of_week",
+        availability.day_of_week
+    )
 
     if hasattr(new_day, "value"):
         new_day = new_day.value
 
-    new_start_time = update_data.get("start_time", availability.start_time)
+    new_start_time = update_data.get(
+        "start_time",
+        availability.start_time
+    )
 
-    new_end_time = update_data.get("end_time", availability.end_time)
+    new_end_time = update_data.get(
+        "end_time",
+        availability.end_time
+    )
 
     if new_start_time >= new_end_time:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start time must be earlier than end time.")
-    
-    # Check overlap with another availability
-    overlapping_slot = (db.query(models.DoctorAvailability)
-                        .filter(
-                            models.DoctorAvailability.doctor_id == availability.doctor_id,
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Start time must be earlier than end time."
+        )
 
-                            models.DoctorAvailability.day_of_week == new_day,
+    overlapping_slot = (
+        db.query(models.DoctorAvailability)
+        .filter(
+            models.DoctorAvailability.doctor_id
+            == availability.doctor_id,
 
-                            models.DoctorAvailability.id != availability.id,
+            models.DoctorAvailability.day_of_week
+            == new_day,
 
-                            models.DoctorAvailability.is_active == True,
+            models.DoctorAvailability.id
+            != availability.id,
 
-                            models.DoctorAvailability.end_time > new_start_time,
+            models.DoctorAvailability.is_active == True,
 
-                            models.DoctorAvailability.end_time > new_start_time
-                        ).first()
+            models.DoctorAvailability.start_time
+            < new_end_time,
+
+            models.DoctorAvailability.end_time
+            > new_start_time
+        )
+        .first()
     )
 
     if overlapping_slot:
@@ -550,7 +623,6 @@ def update_doctor_availability(db: Session, availability_id: int, availability_d
     try:
         db.commit()
         db.refresh(availability)
-    
     except Exception:
         db.rollback()
         raise
